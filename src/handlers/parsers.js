@@ -131,7 +131,7 @@ export const parseGasPrices = (data, prices, gasLimit) => {
       `${slowValueAmount} Gwei`
     );
   }
-  return parseGasPricesTxFee(gasPrices, prices, gasLimit); 
+  return parseGasPricesTxFee(gasPrices, prices, gasLimit);
 };
 
 export const convertGasPricesToNative = (prices, gasPrices) => {
@@ -370,6 +370,37 @@ export const parseAccountUniqueTokens = data =>
       Number(convertAmountFromBigNumber(asset.last_sale.total_price)),
     name: asset.name,
   }));
+
+/**
+ * @desc parse unique tokens transactions from opensea
+ * @param  {Object}
+ * @return {Array}
+ */
+export const parseAccountUniqueTokensTransactions = data => {
+  let transactions = [];
+
+  get(data, 'data.asset_events', []).map(async asset => {
+    let value = 0;
+
+    if (asset.total_price) {
+      value = Number(convertAmountFromBigNumber(asset.total_price));
+    }
+
+    const transaction = {
+      _id: asset.transaction.transaction_hash,
+      timeStamp: new Date(asset.transaction.timestamp),
+      from: asset.transaction.from_account.address,
+      to: asset.transaction.to_account.address,
+      value,
+    };
+
+    const parsedTransaction = await parseConfirmedTransactions(transaction);
+
+    transactions.push(parsedTransaction[0]);
+  });
+
+  return transactions;
+};
 
 const ethFeeAsset = {
   name: 'Ethereum',
@@ -754,4 +785,3 @@ export const parseHistoricalTransactions = async (transactions = null) => {
   );
   return _transactions;
 };
-

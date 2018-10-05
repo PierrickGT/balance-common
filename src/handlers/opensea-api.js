@@ -1,5 +1,8 @@
 import axios from 'axios';
-import { parseAccountUniqueTokens } from './parsers';
+import {
+  parseAccountUniqueTokens,
+  parseAccountUniqueTokensTransactions,
+} from './parsers';
 
 const openseaApiKey = process.env.REACT_APP_OPENSEA_API_KEY || '';
 
@@ -8,7 +11,7 @@ const openseaApiKey = process.env.REACT_APP_OPENSEA_API_KEY || '';
  * @type axios instance
  */
 const api = axios.create({
-  baseURL: 'https://api.opensea.io/api/v1',
+  baseURL: 'https://rinkeby-api.opensea.io/api/v1',
   timeout: 30000, // 30 secs
   headers: {
     Accept: 'application/json',
@@ -24,5 +27,20 @@ const api = axios.create({
 export const apiGetAccountUniqueTokens = async (address = '') => {
   const data = await api.get(`/assets?owner=${address}`);
   const result = parseAccountUniqueTokens(data);
+  return result;
+};
+
+/**
+ * @desc get opensea unique tokens transactions
+ * @param  {String}   [address='']
+ * @param  {String}   [nativeCurrency='']
+ * @return {Promise}
+ */
+export const apiGetAccountUniqueTokensTransactions = async (
+  address = '',
+  nativeCurrency = '',
+) => {
+  const data = await api.get(`/events?account_address=${address}`);
+  const result = parseAccountUniqueTokensTransactions(data, nativeCurrency);
   return result;
 };

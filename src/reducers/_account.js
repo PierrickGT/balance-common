@@ -8,7 +8,10 @@ import {
   apiShapeshiftGetCoins,
   apiShapeshiftGetDepositStatus,
 } from '../handlers/api';
-import { apiGetAccountUniqueTokens } from '../handlers/opensea-api.js';
+import {
+  apiGetAccountUniqueTokens,
+  apiGetAccountUniqueTokensTransactions,
+} from '../handlers/opensea-api.js';
 import {
   parseError,
   parseAccountBalancesPrices,
@@ -83,6 +86,13 @@ const ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_SUCCESS =
 const ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE =
   'account/ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE';
 
+const ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST =
+  'account/ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST';
+const ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS =
+  'account/ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS';
+const ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE =
+  'account/ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE';
+
 const ACCOUNT_SHAPESHIFT_VERIFY_REQUEST =
   'account/ACCOUNT_SHAPESHIFT_VERIFY_REQUEST';
 const ACCOUNT_SHAPESHIFT_VERIFY_SUCCESS =
@@ -122,25 +132,25 @@ export const accountUpdateHasPendingTransaction = (
 
 export const accountInitializeState = () => dispatch => {
   getLanguage().then(language => {
-    dispatch({ 
+    dispatch({
       type: ACCOUNT_CHANGE_LANGUAGE_SUCCESS,
       payload: { language }
     });
   }).catch(error => {
-    dispatch({ 
+    dispatch({
       type: ACCOUNT_CHANGE_LANGUAGE_FAILURE
     });
   });
   getNativeCurrency().then(nativeCurrency => {
-    dispatch({ 
+    dispatch({
       type: ACCOUNT_INITIALIZE_PRICES_SUCCESS,
       payload: { nativeCurrency }
     });
   }).catch(error => {
-    dispatch({ 
+    dispatch({
       type: ACCOUNT_INITIALIZE_PRICES_FAILURE
     });
-  
+
   });
 };
 
@@ -186,7 +196,8 @@ export const accountUpdateAccountAddress = (accountAddress, accountType) => (
   dispatch(accountUpdateNetwork(network));
   dispatch(accountGetAccountTransactions());
   dispatch(accountGetAccountBalances());
-  dispatch(accountGetUniqueTokens());
+  // dispatch(accountGetUniqueTokens());
+  dispatch(accountGetUniqueTokensTransactions());
 };
 
 export const accountUpdateNetwork = network => dispatch => {
@@ -358,7 +369,7 @@ const accountGetAccountBalances = () => (dispatch, getState) => {
 					const message = parseError(error);
 					dispatch(notificationShow(message, true));
 					dispatch({ type: ACCOUNT_GET_ACCOUNT_BALANCES_FAILURE });
-				}); 
+				});
 			})
     .catch(error => {
       const message = parseError(error);
@@ -488,6 +499,27 @@ const accountGetUniqueTokens = () => (dispatch, getState) => {
     });
 };
 
+const accountGetUniqueTokensTransactions = () => (dispatch, getState) => {
+  const { accountAddress, nativeCurrency } = getState().account;
+  dispatch({
+    type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST,
+  });
+  apiGetAccountUniqueTokensTransactions(accountAddress, nativeCurrency)
+    .then(data => {
+      dispatch({
+        type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS,
+        payload: data,
+      });
+    })
+    .catch(error => {
+      const message = parseError(error);
+      dispatch(notificationShow(message, true));
+      dispatch({
+        type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE,
+      });
+    });
+};
+
 const accountGetTransactionStatus = (txHash, network) => (
   dispatch,
   getState,
@@ -611,6 +643,7 @@ export const INITIAL_ACCOUNT_STATE = {
   fetchingShapeshift: false,
   fetchingTransactions: false,
   fetchingUniqueTokens: false,
+  fetchingUniqueTokensTransactions: false,
   hasPendingTransaction: false,
   language: 'en',
   nativePriceRequest: 'USD',
@@ -620,6 +653,7 @@ export const INITIAL_ACCOUNT_STATE = {
   shapeshiftAvailable: true,
   transactions: [],
   uniqueTokens: [],
+  uniqueTokensTransactions: [],
 };
 
 export default (state = INITIAL_ACCOUNT_STATE, action) => {
@@ -668,6 +702,19 @@ export default (state = INITIAL_ACCOUNT_STATE, action) => {
       };
     case ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE:
       return { ...state, fetchingUniqueTokens: false };
+    case ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST:
+      return {
+        ...state,
+        fetchingUniqueTokensTransactions: true,
+      };
+    case ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS:
+      return {
+        ...state,
+        fetchingUniqueTokensTransactions: false,
+        uniqueTokensTransactions: action.payload,
+      };
+    case ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE:
+      return { ...state, fetchingUniqueTokensTransactions: false };
     case ACCOUNT_GET_ACCOUNT_BALANCES_REQUEST:
       return {
         ...state,
