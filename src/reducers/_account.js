@@ -196,7 +196,7 @@ export const accountUpdateAccountAddress = (accountAddress, accountType) => (
   dispatch(accountUpdateNetwork(network));
   dispatch(accountGetAccountTransactions());
   dispatch(accountGetAccountBalances());
-  // dispatch(accountGetUniqueTokens());
+  dispatch(accountGetUniqueTokens());
   dispatch(accountGetUniqueTokensTransactions());
 };
 
@@ -481,11 +481,12 @@ export const accountCheckTransactionStatus = txHash => (dispatch, getState) => {
 };
 
 const accountGetUniqueTokens = () => (dispatch, getState) => {
-  const { accountAddress } = getState().account;
+  const { accountAddress, network } = getState().account;
+
   dispatch({
     type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_REQUEST,
   });
-  apiGetAccountUniqueTokens(accountAddress)
+  apiGetAccountUniqueTokens(accountAddress, network)
     .then(data => {
       dispatch({
         type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_SUCCESS,
@@ -500,11 +501,11 @@ const accountGetUniqueTokens = () => (dispatch, getState) => {
 };
 
 const accountGetUniqueTokensTransactions = () => (dispatch, getState) => {
-  const { accountAddress, nativeCurrency } = getState().account;
+  const { accountAddress, nativeCurrency, network } = getState().account;
   dispatch({
     type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST,
   });
-  apiGetAccountUniqueTokensTransactions(accountAddress, nativeCurrency)
+  apiGetAccountUniqueTokensTransactions(accountAddress, nativeCurrency, network)
     .then(data => {
       dispatch({
         type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS,
