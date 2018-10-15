@@ -32,6 +32,7 @@ import {
   updateLocalBalances,
   updateLocalTransactions,
   updateLocalUniqueTokens,
+  updateLocalUniqueTokensTransactions,
 } from '../handlers/commonStorage';
 import { web3SetHttpProvider } from '../handlers/web3';
 import { notificationShow } from './_notification';
@@ -515,23 +516,49 @@ const accountGetUniqueTokens = () => (dispatch, getState) => {
 
 const accountGetUniqueTokensTransactions = () => (dispatch, getState) => {
   const { accountAddress, nativeCurrency, network } = getState().account;
+
   dispatch({
     type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_REQUEST,
   });
-  apiGetAccountUniqueTokensTransactions(accountAddress, nativeCurrency, network)
-    .then(data => {
+
+  getAccountLocal(accountAddress).then(accountLocal => {
+    const cachedUniqueTokensTransactions = _.get(
+      accountLocal,
+      `${network}.uniqueTokensTransactions`,
+      null,
+    );
+
+    if (cachedUniqueTokensTransactions) {
+      updateLocalUniqueTokensTransactions(
+        accountAddress,
+        cachedUniqueTokensTransactions,
+        network,
+      );
       dispatch({
         type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS,
-        payload: data,
+        payload: cachedUniqueTokensTransactions,
       });
-    })
-    .catch(error => {
-      const message = parseError(error);
-      dispatch(notificationShow(message, true));
-      dispatch({
-        type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE,
+    }
+
+    apiGetAccountUniqueTokensTransactions(
+      accountAddress,
+      nativeCurrency,
+      network,
+    )
+      .then(data => {
+        dispatch({
+          type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_SUCCESS,
+          payload: data,
+        });
+      })
+      .catch(error => {
+        const message = parseError(error);
+        dispatch(notificationShow(message, true));
+        dispatch({
+          type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_TRANSACTIONS_FAILURE,
+        });
       });
-    });
+  });
 };
 
 const accountGetTransactionStatus = (txHash, network) => (

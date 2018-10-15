@@ -171,6 +171,30 @@ export const updateLocalUniqueTokens = async (
 };
 
 /**
+ * @desc update local unique tokens transactions
+ * @param  {String}   [address]
+ * @param  {Array}    [unique tokens transactions]
+ * @param  {String}   [network]
+ * @return {Void}
+ */
+export const updateLocalUniqueTokensTransactions = async (
+  address,
+  uniqueTokensTransactions,
+  network,
+) => {
+  if (!address) return;
+  let accountLocal = await getAccountLocal(address);
+  if (!accountLocal) {
+    accountLocal = {};
+  }
+  if (!accountLocal[network]) {
+    accountLocal[network] = {};
+  }
+  accountLocal[network].uniqueTokensTransactions = uniqueTokensTransactions;
+  await saveLocal(address.toLowerCase(), accountLocal, accountLocalVersion);
+};
+
+/**
  * @desc update local transactions
  * @param  {String}   [address]
  * @param  {Array}    [transactions]
