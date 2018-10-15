@@ -31,6 +31,7 @@ import {
   saveNativePrices,
   updateLocalBalances,
   updateLocalTransactions,
+  updateLocalUniqueTokens,
 } from '../handlers/commonStorage';
 import { web3SetHttpProvider } from '../handlers/web3';
 import { notificationShow } from './_notification';
@@ -192,7 +193,7 @@ export const accountUpdateAccountAddress = (accountAddress, accountType) => (
     type: ACCOUNT_UPDATE_ACCOUNT_ADDRESS,
     payload: { accountAddress, accountType },
   });
-  dispatch(accountShapeshiftVerify());
+  //dispatch(accountShapeshiftVerify());
   dispatch(accountUpdateNetwork(network));
   dispatch(accountGetAccountTransactions());
   dispatch(accountGetAccountBalances());
@@ -481,23 +482,35 @@ export const accountCheckTransactionStatus = txHash => (dispatch, getState) => {
 };
 
 const accountGetUniqueTokens = () => (dispatch, getState) => {
+  dispatch({ type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_REQUEST });
   const { accountAddress, network } = getState().account;
-
-  dispatch({
-    type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_REQUEST,
-  });
-  apiGetAccountUniqueTokens(accountAddress, network)
-    .then(data => {
+  getAccountLocal(accountAddress).then(accountLocal => {
+    const cachedUniqueTokens = _.get(accountLocal, `${network}.uniqueTokens`, null);
+    if (cachedUniqueTokens) {
+      updateLocalUniqueTokens(accountAddress, cachedUniqueTokens, network);
       dispatch({
         type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_SUCCESS,
-        payload: data,
+        payload: cachedUniqueTokens,
       });
-    })
-    .catch(error => {
-      const message = parseError(error);
-      dispatch(notificationShow(message, true));
-      dispatch({ type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE });
+    }
+    apiGetAccountUniqueTokens(accountAddress)
+      .then(data => {
+        updateLocalUniqueTokens(accountAddress, data, network);
+        dispatch({
+          type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_SUCCESS,
+          payload: data,
+        });
+      })
+      .catch(error => {
+        const message = parseError(error);
+        dispatch(notificationShow(message, true));
+        dispatch({ type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE });
     });
+  })
+  .catch(error => {
+    dispatch({ type: ACCOUNT_GET_ACCOUNT_UNIQUE_TOKENS_FAILURE });
+  });
+
 };
 
 const accountGetUniqueTokensTransactions = () => (dispatch, getState) => {
@@ -651,7 +664,7 @@ export const INITIAL_ACCOUNT_STATE = {
   nativeCurrency: 'USD',
   network: 'mainnet',
   prices: {},
-  shapeshiftAvailable: true,
+  shapeshiftAvailable: false,
   transactions: [],
   uniqueTokens: [],
   uniqueTokensTransactions: [],
