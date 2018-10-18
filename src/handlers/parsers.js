@@ -388,10 +388,13 @@ export const parseAccountUniqueTokensTransactions = data => {
 
     const transaction = {
       _id: asset.transaction.transaction_hash,
-      timeStamp: new Date(asset.transaction.timestamp),
       from: asset.transaction.from_account.address,
-      to: asset.transaction.to_account.address,
+      icon: asset.image_thumbnail_url,
+      name: asset.name,
       value,
+      quantity: 1,
+      timeStamp: asset.transaction.timestamp,
+      to: asset.transaction.to_account.address,
     };
 
     const parsedTransaction = await parseConfirmedTransactions(transaction);
